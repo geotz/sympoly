@@ -31,5 +31,5 @@ int main()
     dump(b,"b");
 
     std::cout << a(2) << std::endl;
-    std::cout << b(2) << std::endl;
+    std::cout << b(2) << std::endl; // fixme
 }
