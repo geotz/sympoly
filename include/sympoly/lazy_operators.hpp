@@ -1,4 +1,9 @@
 #ifndef _SYMPOLY_LAZY_OPERATORS_H_
+
+#ifdef _SYMPOLY_OPERATORS_H_
+#error Normal operators (already included) cannot be mixed with requested lazy operators.
+#endif
+
 #define _SYMPOLY_LAZY_OPERATORS_H_
 
 namespace sym
@@ -60,7 +65,6 @@ auto expr_mul(const A& a, const B& b) { return Mult_<A,B>{a, b}; }
 template<class OS,class A,class B>
 OS& operator<<(OS& os, const sym::Mult_b<A,B>& op)
 {
-    using namespace sym;
     os << "(" << op.a << ") * (" << op.b << ")";
     return os;
 }
@@ -72,16 +76,18 @@ OS& operator<<(OS& os, const sym::Mult_b<A,B>& op)
 template<class OS,class A,class B>
 OS& operator<<(OS& os, const sym::Add_b<A,B>& op)
 {
-    using namespace sym;
     os << "(" << op.a << ") + (" << op.b << ")";
     return os;
 }
 
+// WARNING: constructs expressions from everything -- maybe restrict to Monomials/Polynomials
+// however, ADL will restrict to sym:: namespace
+
 template<class A, class B>
-auto operator+(const A& a, const B& b) { return sym::expr_add(a,b); }
+auto operator+(const A& a, const B& b) { return expr_add(a,b); }
 
 template<class A,class B>
-auto operator*(const A& a, const B& b) { return sym::expr_mul(a,b); }
+auto operator*(const A& a, const B& b) { return expr_mul(a,b); }
 
 }
 

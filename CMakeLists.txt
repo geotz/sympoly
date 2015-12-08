@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.3)
 
 include_directories(./include)
 
-set(SOURCES include/sympoly/debug.hpp include/sympoly/internal/monomial.hpp include/sympoly/polynomial.hpp include/sympoly/lazy_operators.hpp demo.cpp)
+set(SOURCES include/sympoly/debug.hpp include/sympoly/internal/monomial.hpp include/sympoly/polynomial.hpp include/sympoly/lazy_operators.hpp include/sympoly/operators.hpp demo.cpp)
 
 add_definitions(-std=c++14)
 
