@@ -25,12 +25,13 @@ int main()
     sym::Monom<int,3> x3(3);
     sym::Monom<int,4> x4(4);
     auto a = (x1+x2)*(x3+x4)*(x1+x2+x3+x4);
+    auto a2 = a*2;
 //    auto a = x1^_2;
-    dump(a,"a");
+    dump(a2,"a2");
 
-    auto b = a.expand();
+    auto b = expand(a);
     dump(b,"b");
 
-    std::cout << a(2) << std::endl;
-    std::cout << b(2) << std::endl; // fixme
+    std::cout << a2(2.0) << std::endl;
+    std::cout << b(2) << std::endl;
 }

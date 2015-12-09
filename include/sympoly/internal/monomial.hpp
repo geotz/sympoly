@@ -42,12 +42,9 @@ public:
 
     static constexpr int degree = DEG;
     bool is_zero() const { return coeff == RT(0); }
-    FT operator()(FT x, int content=0) const { return is_zero() ? 0 : coeff * power(x,content); }
-    FT power(FT x, int content=0) const {
-        std::cerr << "pow x = " << x << " DEG = " << degree << " content = " << content << std::endl;
-        return std::pow(x, DEG-content);
-    }
-    const Monom& expand() const { return *this; }
+    FT operator()(FT x, int content=0) const { return eval(*this, x, content); }
+    FT power(FT x, int content=0) const { return std::pow(x, DEG-content); }
+//    const Monom& expand() const { return *this; }
     template<class OS>
     OS& dump(OS& os) const {
         if (degree == 0) return os << coeff;
@@ -62,6 +59,15 @@ public:
         return os;
     }
 };
+
+template<class RT, int DEG, class FT>
+FT eval(const Monom<RT,DEG>& a, FT x, int content=0)
+{
+    return a.is_zero() ? 0 : a.coeff * a.power(x,content);
+}
+
+template<class T>
+auto expand(const T& expr) { return expr; }
 
 // TODO: assert unsigned?
 template<int N,class RT,int DEG>
@@ -82,29 +88,44 @@ Monom<RT,DEG1+DEG2> mul_op(const Monom<RT,DEG1>& a, const Monom<RT,DEG2>& b)
     return Monom<RT,DEG1+DEG2>(a.coeff * b.coeff);
 }
 
+template<class RT, int DEG>
+Monom<RT,DEG> mul_op(const RT& a, const Monom<RT,DEG>& b)
+{
+    return Monom<RT,DEG>(a * b.coeff);
+}
+
+template<class RT, int DEG>
+auto mul_op(const Monom<RT,DEG>& a, const RT& b) { return mul_op(b, a); }
+
 // **************************
 //      OPERATORS
 // **************************
 
 template<class OS, class RT, int DEG>
-OS& operator<<(OS& os, const sym::Monom<RT,DEG>& m) { return m.dump(os); }
+OS& operator<<(OS& os, const Monom<RT,DEG>& m) { return m.dump(os); }
 
 // trivial arithmetic operators are always defined
 
-template<class RT, int DEG>
-auto operator+(const sym::Monom<RT,DEG>& a, const sym::Monom<RT,DEG>& b) { return sym::add_op(a,b); }
+template<class RT,int DEG>
+auto operator*(const Monom<RT,DEG>& a, const RT& b) { return mul_op(a,b); }
+
+template<class RT,int DEG>
+auto operator*(const RT& a, const Monom<RT,DEG>& b) { return mul_op(a,b); }
 
 template<class RT, int DEG>
-auto operator-(const sym::Monom<RT,DEG>& a, const sym::Monom<RT,DEG>& b)
+auto operator+(const Monom<RT,DEG>& a, const Monom<RT,DEG>& b) { return add_op(a,b); }
+
+template<class RT, int DEG>
+auto operator-(const Monom<RT,DEG>& a, const Monom<RT,DEG>& b)
 {
-    return sym::Monom<RT,DEG>(a.coeff - b.coeff);
+    return Monom<RT,DEG>(a.coeff - b.coeff);
 }
 
 template<class RT, int DEG1, int DEG2>
-auto operator*(const sym::Monom<RT,DEG1>& a, const sym::Monom<RT,DEG2>& b) { return sym::mul_op(a, b); }
+auto operator*(const Monom<RT,DEG1>& a, const Monom<RT,DEG2>& b) { return mul_op(a, b); }
 
 template<class RT, int DEG, int N>
-auto operator^(const sym::Monom<RT,DEG>& a, const sym::_<N>& ) { return sym::pow_op<N>(a); }
+auto operator^(const Monom<RT,DEG>& a, const _<N>& ) { return pow_op<N>(a); }
 
 }
 

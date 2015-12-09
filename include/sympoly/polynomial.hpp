@@ -123,7 +123,7 @@ public:
     typedef typename Monomial::field_type FT;
 
     PolynomRep( const Monomial& m, const Polynomial& p): front(m.coeff), tail(p) { }
-    static constexpr int content = Monomial::degree;
+//    static constexpr int content = Monomial::degree;
     static constexpr int degree = Polynomial::degree;
     bool is_zero() const { return front.is_zero() && tail.is_zero(); }
     template<class OS>
@@ -131,10 +131,6 @@ public:
         os << front << " + ";
         tail.dump(os);
         return os;
-    }
-    FT operator()(FT x, int content=0) const {
-        if (x == FT(0) ) return 0; // short-circuit ?
-        return front.power(x,content) * ( front.coeff + tail(x,content + this->content) );
     }
 };
 
@@ -149,6 +145,7 @@ public:
 
     Polynom( const Monomial& m, const Polynomial& p): Base(m, p) { }
     const Polynom& expand() const { return *this; }
+    FT operator()(FT x, int content=0) const { return eval(*this, x, content); }
 };
 
 template<class RT, int DEG1, int DEG2, class FT>
@@ -164,7 +161,15 @@ public:
 
     Polynom( const Monomial1& m, const Monomial2& p): Base(m, p) { }
     const Polynom& expand() const { return *this; }
+    FT operator()(FT x, int content=0) const { return eval(*this, x, content); }
 };
+
+template<class RT, class Supp, class FT>
+FT eval(const Polynom<RT,Supp,FT>& a, FT x, int content=0)
+{
+    if (x == FT(0) ) return 0; // short-circuit ?
+    return a.front.power(x, content) * ( a.front.coeff + a.tail(x, a.front.degree) );
+}
 
 template<class RT,class Supp>
 struct Anynom
@@ -291,6 +296,7 @@ auto mul_op(const A1& a1, const A2& a2, const A3& a3, const As&... as)
 //template<int N,class RT,int... DEGs>
 //auto pow_op(const Polynom<RT,Support<DEGs...>>& a)
 //{
+
 //}
 
 // **************************
