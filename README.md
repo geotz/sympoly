@@ -1,2 +1,2 @@
 # sympoly
-c++14 symbolic polynomials with compile-time known support and optimal memory footprint
+c++14 symbolic polynomials with compile-time computed support and optimal memory footprint
