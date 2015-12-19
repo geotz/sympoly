@@ -30,7 +30,7 @@ constexpr T cpow(const T base, const int exponent)
            base * cpow(base, (exponent-1)>>1) * cpow(base, (exponent-1)>>1);
 }
 
-template<class RT, int DEG = 0, class FT = double>
+template<class RT, int DEG = 0, class FT = double, char SYM = 'x'>
 class Monom
 {
 public:
@@ -41,6 +41,7 @@ public:
     Monom( RT c = RT(1) ): coeff(c) {}
 
     static constexpr int degree = DEG;
+    static constexpr char symbol = SYM;
     bool is_zero() const { return coeff == RT(0); }
     FT operator()(FT x, int content=0) const { return eval(*this, x, content); }
     FT power(FT x, int content=0) const { return std::pow(x, DEG-content); }
@@ -54,14 +55,14 @@ public:
         } else if (coeff != RT(1) ) {
             os << coeff;
         }
-        os << "x";
+        os << symbol;
         if (degree > 1) os << "^" << degree;
         return os;
     }
 };
 
-template<class RT, int DEG, class FT>
-FT eval(const Monom<RT,DEG>& a, FT x, int content=0)
+template<class RT, int DEG, class FT, char SYM>
+FT eval(const Monom<RT,DEG,FT,SYM>& a, FT x, int content=0)
 {
     return a.is_zero() ? 0 : a.coeff * a.power(x,content);
 }
@@ -70,62 +71,62 @@ template<class T>
 auto expand(const T& expr) { return expr; }
 
 // TODO: assert unsigned?
-template<int N,class RT,int DEG>
-auto pow_op(const Monom<RT,DEG>& a)
+template<int N,class RT,int DEG,class FT,char SYM>
+auto pow_op(const Monom<RT,DEG,FT,SYM>& a)
 {
-    return Monom<RT,DEG*N>(cpow(a.coeff,N));
+    return Monom<RT,DEG*N,FT,SYM>(cpow(a.coeff,N));
 }
 
-template<class RT, int DEG>
-Monom<RT,DEG> add_op(const Monom<RT,DEG>& a, const Monom<RT,DEG>& b)
+template<class RT, int DEG, class FT, char SYM>
+Monom<RT,DEG,FT,SYM> add_op(const Monom<RT,DEG,FT,SYM>& a, const Monom<RT,DEG,FT,SYM>& b)
 {
-    return Monom<RT,DEG>(a.coeff + b.coeff);
+    return Monom<RT,DEG,FT,SYM>(a.coeff + b.coeff);
 }
 
-template<class RT, int DEG1, int DEG2>
-Monom<RT,DEG1+DEG2> mul_op(const Monom<RT,DEG1>& a, const Monom<RT,DEG2>& b)
+template<class RT, int DEG1, int DEG2, class FT, char SYM>
+Monom<RT,DEG1+DEG2,FT,SYM> mul_op(const Monom<RT,DEG1,FT,SYM>& a, const Monom<RT,DEG2,FT,SYM>& b)
 {
-    return Monom<RT,DEG1+DEG2>(a.coeff * b.coeff);
+    return Monom<RT,DEG1+DEG2,FT,SYM>(a.coeff * b.coeff);
 }
 
-template<class RT, int DEG>
-Monom<RT,DEG> mul_op(const RT& a, const Monom<RT,DEG>& b)
+template<class RT, int DEG, class FT, char SYM>
+Monom<RT,DEG,FT,SYM> mul_op(const RT& a, const Monom<RT,DEG,FT,SYM>& b)
 {
-    return Monom<RT,DEG>(a * b.coeff);
+    return Monom<RT,DEG,FT,SYM>(a * b.coeff);
 }
 
-template<class RT, int DEG>
-auto mul_op(const Monom<RT,DEG>& a, const RT& b) { return mul_op(b, a); }
+template<class RT, int DEG, class FT, char SYM>
+auto mul_op(const Monom<RT,DEG,FT,SYM>& a, const RT& b) { return mul_op(b, a); }
 
 // **************************
 //      OPERATORS
 // **************************
 
-template<class OS, class RT, int DEG>
-OS& operator<<(OS& os, const Monom<RT,DEG>& m) { return m.dump(os); }
+template<class OS, class RT, int DEG, class FT, char SYM>
+OS& operator<<(OS& os, const Monom<RT,DEG,FT,SYM>& m) { return m.dump(os); }
 
 // trivial arithmetic operators are always defined
 
-template<class RT,int DEG>
-auto operator*(const Monom<RT,DEG>& a, const RT& b) { return mul_op(a,b); }
+template<class RT,int DEG, class FT, char SYM>
+auto operator*(const Monom<RT,DEG,FT,SYM>& a, const RT& b) { return mul_op(a,b); }
 
-template<class RT,int DEG>
-auto operator*(const RT& a, const Monom<RT,DEG>& b) { return mul_op(a,b); }
+template<class RT,int DEG, class FT, char SYM>
+auto operator*(const RT& a, const Monom<RT,DEG,FT,SYM>& b) { return mul_op(a,b); }
 
-template<class RT, int DEG>
-auto operator+(const Monom<RT,DEG>& a, const Monom<RT,DEG>& b) { return add_op(a,b); }
+template<class RT, int DEG, class FT, char SYM>
+auto operator+(const Monom<RT,DEG,FT,SYM>& a, const Monom<RT,DEG,FT,SYM>& b) { return add_op(a,b); }
 
-template<class RT, int DEG>
-auto operator-(const Monom<RT,DEG>& a, const Monom<RT,DEG>& b)
+template<class RT, int DEG, class FT, char SYM>
+auto operator-(const Monom<RT,DEG,FT,SYM>& a, const Monom<RT,DEG,FT,SYM>& b)
 {
     return Monom<RT,DEG>(a.coeff - b.coeff);
 }
 
-template<class RT, int DEG1, int DEG2>
-auto operator*(const Monom<RT,DEG1>& a, const Monom<RT,DEG2>& b) { return mul_op(a, b); }
+template<class RT, int DEG1, int DEG2, class FT, char SYM>
+auto operator*(const Monom<RT,DEG1,FT,SYM>& a, const Monom<RT,DEG2,FT,SYM>& b) { return mul_op(a, b); }
 
-template<class RT, int DEG, int N>
-auto operator^(const Monom<RT,DEG>& a, const _<N>& ) { return pow_op<N>(a); }
+template<class RT, int DEG, int N, class FT, char SYM>
+auto operator^(const Monom<RT,DEG,FT,SYM>& a, const _<N>& ) { return pow_op<N>(a); }
 
 }
 

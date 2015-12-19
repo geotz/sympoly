@@ -1,118 +1,11 @@
 #ifndef _SYMPOLY_POLYNOMIAL_H_
 #define _SYMPOLY_POLYNOMIAL_H_
 
-// ##################
-// TODO: add FT !!
-// ###################
-
-#include<type_traits>
-
 #include"internal/monomial.hpp"
+#include"functional_support.h"
 
 namespace sym
 {
-
-template<int DEG, int... DEGs>
-struct Support
-{
-    typedef Support<DEG,DEGs...> Self;
-    typedef Support<DEGs...> Tail;
-    static constexpr int head = DEG;
-    static constexpr int degree = Tail::degree;
-    static constexpr int size = 1 + Tail::size;
-    static constexpr bool contains( int k ) { return DEG == k || Tail::contains(k); }
-
-    static_assert( Tail::head > head, "support sequence should be increasing" );
-    static_assert( DEG >= 0, "degree should be non-negative" );
-};
-
-template<int DEG>
-struct Support<DEG>
-{
-    typedef Support<DEG> Self;
-    static constexpr int head = DEG;
-    static constexpr int degree = DEG;
-    static constexpr int size = 1;
-    static constexpr bool contains( int k ) { return DEG == k; }
-
-    static_assert( DEG >= 0, "degree should be non-negative" );
-};
-
-template<int, class>
-struct Append;
-
-template<int DEG, int... DEGs>
-struct Append<DEG,Support<DEGs...>>
-{
-    typedef Support<DEG,DEGs...> Result;
-};
-
-template<int, class>
-struct Add;
-
-template<int K, int DEG1>
-struct Add<K,Support<DEG1>>
-{
-    typedef Support<K+DEG1> Result;
-};
-
-template<int K, int DEG1, int... DEGs>
-struct Add<K,Support<DEG1,DEGs...>>
-{
-    typedef typename Append<K+DEG1,
-                            typename Add<K,Support<DEGs...>>::Result>::Result Result;
-};
-
-template<class S1, class S2>
-struct Union;
-
-template<int DEG1, int DEG2>
-struct Union<Support<DEG1>,Support<DEG2>>
-{
-    typedef typename std::conditional< DEG1 < DEG2,
-                Support<DEG1,DEG2>,
-                typename std::conditional< DEG1 == DEG2,
-                        Support<DEG2>,
-                        Support<DEG2,DEG1>>::type
-              >::type Result;
-};
-
-template<int DEG1,int... DEG1s, int DEG2, int... DEG2s>
-struct Union<Support<DEG1,DEG1s...>,Support<DEG2,DEG2s...>>
-{
-    typedef typename std::conditional< DEG1 < DEG2,
-                typename Append<DEG1,
-                       typename Union<Support<DEG1s...>, Support<DEG2,DEG2s...>>::Result
-                       >::type,
-                 typename std::conditional<DEG1 == DEG2,
-                        typename Append<DEG1,typename Union<Support<DEG1s...>,Support<DEG2s...>>::Result>::Result,
-                        typename Append<DEG2,
-                               typename Union<Support<DEG1,DEG1s...>, Support<DEG2s...>>::Result>::Result
-                        >::type
-              >::type Result;
-};
-
-template<int DEG1,int DEG2, int... DEG2s>
-struct Union<Support<DEG1>,Support<DEG2,DEG2s...>>
-{
-    typedef typename std::conditional< DEG1 < DEG2,
-                typename Append<DEG1,
-                       Support<DEG2,DEG2s...>
-                       >::Result,
-                typename std::conditional<DEG1 == DEG2,
-                        Support<DEG2,DEG2s...>,
-                        typename Append<DEG2,
-                               typename Union<Support<DEG1>, Support<DEG2s...>>::Result
-                               >::Result
-                          >::type
-              >::type Result;
-};
-
-template<int DEG1,int... DEG1s, int DEG2>
-struct Union<Support<DEG1,DEG1s...>,Support<DEG2>>
-{
-    typedef typename Union<Support<DEG2>,Support<DEG1,DEG1s...>>::Result Result;
-};
 
 template<class Monomial,class Polynomial>
 class PolynomRep
@@ -125,6 +18,7 @@ public:
     PolynomRep( const Monomial& m, const Polynomial& p): front(m.coeff), tail(p) { }
 //    static constexpr int content = Monomial::degree;
     static constexpr int degree = Polynomial::degree;
+    static constexpr char symbol = Monomial::symbol;
     bool is_zero() const { return front.is_zero() && tail.is_zero(); }
     template<class OS>
     OS& dump(OS& os) const {
@@ -134,13 +28,13 @@ public:
     }
 };
 
-template<class RT, class Supp, class FT = double>
-class Polynom: public PolynomRep<Monom<RT,Supp::head,FT>, Polynom<RT,typename Supp::Tail,FT>>
+template<class RT, class Supp, class FT=double, char SYM='x'>
+class Polynom: public PolynomRep<Monom<RT,Supp::head,FT,SYM>, Polynom<RT,typename Supp::Tail,FT,SYM>>
 {
 public:
     using Tail = typename Supp::Tail;
-    typedef Monom<RT,Supp::head,FT> Monomial;
-    typedef Polynom<RT,Tail,FT> Polynomial;
+    typedef Monom<RT,Supp::head,FT,SYM> Monomial;
+    typedef Polynom<RT,Tail,FT,SYM> Polynomial;
     typedef PolynomRep<Monomial, Polynomial> Base;
 
     Polynom( const Monomial& m, const Polynomial& p): Base(m, p) { }
@@ -148,13 +42,13 @@ public:
     FT operator()(FT x, int content=0) const { return eval(*this, x, content); }
 };
 
-template<class RT, int DEG1, int DEG2, class FT>
-class Polynom<RT,Support<DEG1,DEG2>,FT>: public PolynomRep<Monom<RT,DEG1,FT>, Monom<RT,DEG2,FT>>
+template<class RT, int DEG1, int DEG2, class FT, char SYM>
+class Polynom<RT,Support<DEG1,DEG2>,FT,SYM>: public PolynomRep<Monom<RT,DEG1,FT,SYM>, Monom<RT,DEG2,FT,SYM>>
 {
 public:
     static_assert( DEG1<DEG2, "degree sequence should be increasing" );
-    typedef Monom<RT,DEG1,FT> Monomial1;
-    typedef Monom<RT,DEG2,FT> Monomial2;
+    typedef Monom<RT,DEG1,FT,SYM> Monomial1;
+    typedef Monom<RT,DEG2,FT,SYM> Monomial2;
     typedef Monomial1 Monomial;
     typedef Monomial2 Polynomial;
     typedef PolynomRep<Monomial1, Monomial2> Base;
@@ -164,19 +58,19 @@ public:
     FT operator()(FT x, int content=0) const { return eval(*this, x, content); }
 };
 
-template<class RT, class Supp, class FT>
-FT eval(const Polynom<RT,Supp,FT>& a, FT x, int content=0)
+template<class RT, class Supp, class FT, char SYM>
+FT eval(const Polynom<RT,Supp,FT,SYM>& a, FT x, int content=0)
 {
     if (x == FT(0) ) return 0; // short-circuit ?
     return a.front.power(x, content) * ( a.front.coeff + a.tail(x, a.front.degree) );
 }
 
-template<class RT,class Supp>
+template<class RT,class Supp,class FT,char SYM>
 struct Anynom
 {
     typedef typename std::conditional<Supp::size == 1,
-        Monom<RT,Supp::head>,
-        Polynom<RT,Supp>>::type Type;
+        Monom<RT,Supp::head,FT,SYM>,
+        Polynom<RT,Supp,FT,SYM>>::type Type;
 };
 
 template<class R,bool>
@@ -196,29 +90,42 @@ struct MonoMono<R,false>
     R operator()(const A1& a1, const A2& a2) { return R(a2,a1); }
 };
 
-template<class RT,int DEG1, int DEG2>
-auto add_op(const Monom<RT,DEG1>& a, const Monom<RT,DEG2>& b)
+template<class RT,int DEG1, int DEG2,class FT,char SYM>
+auto add_op(const Monom<RT,DEG1,FT,SYM>& a, const Monom<RT,DEG2,FT,SYM>& b)
 {
     typedef typename Union<Support<DEG1>,Support<DEG2>>::Result Supp;
-    typedef Polynom<RT,Supp> Result;
+    typedef Polynom<RT,Supp,FT,SYM> Result;
     return MonoMono<Result,(DEG1<DEG2)>()(a, b);
 }
 
-template<class RT, int DEG1, int... DEGs>
-auto mul_op(const Monom<RT,DEG1>& a, const Polynom<RT,Support<DEGs...>>& b)
+template<class RT, int DEG1, int... DEGs,class FT,char SYM>
+auto mul_op(const Monom<RT,DEG1,FT,SYM>& a, const Polynom<RT,Support<DEGs...>,FT,SYM>& b)
 {
-    typedef typename Add<DEG1,Support<DEGs...>>::Result Supp;
-    typedef Monom<RT,Supp::head> Monomial;
-    typedef typename Anynom<RT,typename Supp::Tail>::Type Polynomial;
-    typedef Polynom<RT,Supp> ResultPolynomial;
+    typedef typename Translate<DEG1,Support<DEGs...>>::Result Supp;
+    typedef Monom<RT,Supp::head,FT,SYM> Monomial;
+    typedef typename Anynom<RT,typename Supp::Tail,FT,SYM>::Type Polynomial;
+    typedef Polynom<RT,Supp,FT,SYM> ResultPolynomial;
 
     return ResultPolynomial(add_op(mul_op(a, b.front), mul_op(a, b.tail)));
 }
 
-template<class RT, int DEG1, int... DEGs>
-auto mul_op(const Polynom<RT,Support<DEGs...>>& a, const Monom<RT,DEG1>& b)
+template<class RT, int DEG1, int... DEGs,class FT, char SYM>
+auto mul_op(const Polynom<RT,Support<DEGs...>,FT,SYM>& a, const Monom<RT,DEG1,FT,SYM>& b)
 {
     return mul_op(b, a);
+}
+
+// maybe optimize instead of passing through monomial...
+template<class RT, int... DEGs, class FT, char SYM>
+auto mul_op(const RT& a, const Polynom<RT,Support<DEGs...>,FT,SYM>& b)
+{
+    return mul_op(Monom<RT,0,FT,SYM>(a), b);
+}
+
+template<class RT, int... DEGs, class FT, char SYM>
+auto mul_op(const Polynom<RT,Support<DEGs...>,FT,SYM>& a, const RT& b)
+{
+    return mul_op(a, Monom<RT,0,FT,SYM>(b));
 }
 
 template<class R,class M1,class P1,class M2,class P2,int>
@@ -248,34 +155,34 @@ struct MonoPoly<R,M1,P1,M2,P2,1>
     }
 };
 
-template<class RT, int DEG1, int... DEGs>
-auto add_op(const Monom<RT,DEG1>& a, const Polynom<RT,Support<DEGs...>>& b)
+template<class RT, int DEG1, int... DEGs, class FT, char SYM>
+auto add_op(const Monom<RT,DEG1,FT,SYM>& a, const Polynom<RT,Support<DEGs...>,FT,SYM>& b)
 {
     typedef Support<DEGs...> Support2;
     typedef typename Union<Support<DEG1>,Support<DEGs...>>::Result Supp;
-    typedef Monom<RT,Supp::head> Monomial;
-    typedef typename Anynom<RT,typename Supp::Tail>::Type Polynomial;
-    typedef Polynom<RT,Supp> ResultPolynomial;
+    typedef Monom<RT,Supp::head,FT,SYM> Monomial;
+    typedef typename Anynom<RT,typename Supp::Tail,FT,SYM>::Type Polynomial;
+    typedef Polynom<RT,Supp,FT,SYM> ResultPolynomial;
 
     constexpr int k = DEG1 < Support2::head ? -1 : DEG1 != Support2::head;
     return MonoPoly<ResultPolynomial,decltype(a),decltype(b),Monomial,Polynomial,k>()(a, b);
 }
 
-template<class RT, int DEG1, int... DEGs>
-auto add_op(const Polynom<RT,Support<DEGs...>>& a, const Monom<RT,DEG1>& b)
+template<class RT, int DEG1, int... DEGs, class FT, char SYM>
+auto add_op(const Polynom<RT,Support<DEGs...>,FT,SYM>& a, const Monom<RT,DEG1,FT,SYM>& b)
 {
     return add_op(b, a);
 }
 
-template<class RT, int... DEG1s, int... DEG2s>
-auto add_op(const Polynom<RT,Support<DEG1s...>>& a, const Polynom<RT,Support<DEG2s...>>& b)
+template<class RT, int... DEG1s, int... DEG2s, class FT, char SYM>
+auto add_op(const Polynom<RT,Support<DEG1s...>,FT,SYM>& a, const Polynom<RT,Support<DEG2s...>,FT,SYM>& b)
 {
     // chop-off
     return add_op(a.front, b.front, a.tail,b.tail); // avoid messing with operator+
 }
 
-template<class RT, int... DEG1s, int... DEG2s>
-auto mul_op(const Polynom<RT,Support<DEG1s...>>& a, const Polynom<RT,Support<DEG2s...>>& b)
+template<class RT, int... DEG1s, int... DEG2s, class FT, char SYM>
+auto mul_op(const Polynom<RT,Support<DEG1s...>,FT,SYM>& a, const Polynom<RT,Support<DEG2s...>,FT,SYM>& b)
 {
     // gauss/karatsuba, fft ?
     return add_op(mul_op(a.front,b.front), mul_op(a.front,b.tail), mul_op(b.front,a.tail), mul_op(a.tail,b.tail));
@@ -293,8 +200,8 @@ auto mul_op(const A1& a1, const A2& a2, const A3& a3, const As&... as)
     return mul_op(mul_op(a1, a2), a3, as...);
 }
 
-//template<int N,class RT,int... DEGs>
-//auto pow_op(const Polynom<RT,Support<DEGs...>>& a)
+//template<int N,class RT,int... DEGs,class FT,char SYM>
+//auto pow_op(const Polynom<RT,Support<DEGs...>,FT,SYM>& a)
 //{
 
 //}
@@ -303,8 +210,8 @@ auto mul_op(const A1& a1, const A2& a2, const A3& a3, const As&... as)
 //      OPERATORS
 // **************************
 
-template<class OS, class RT, class Supp>
-OS& operator<<(OS& os, const sym::Polynom<RT,Supp>& m) { return m.dump(os); }
+template<class OS, class RT, class Supp, class FT, char SYM>
+OS& operator<<(OS& os, const sym::Polynom<RT,Supp,FT,SYM>& m) { return m.dump(os); }
 
 }
 
