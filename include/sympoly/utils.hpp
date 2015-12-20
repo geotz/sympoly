@@ -1,9 +1,10 @@
-#ifndef _SYMPOLY_DEBUG_H_
-#define _SYMPOLY_DEBUG_H_
+#ifndef _SYMPOLY_UTILS_H_
+#define _SYMPOLY_UTILS_H_
 
 #include<cxxabi.h>
 #include<string>
 #include<cstdlib>
+#include<chrono>
 
 namespace sym
 {
@@ -19,6 +20,17 @@ inline std::string demangle(const std::string& name)
     };
 
     return (status==0) ? res.get() : name ;
+}
+
+template<class F>
+void benchmark(const std::string& name, const F& pred, int n = 1)
+{
+    std::cout << "measuring " << name << "... ";
+    auto begin = std::chrono::steady_clock::now();
+    for (int i = 0; i < n; ++i) pred();
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - begin;
+    std::cout << std::chrono::duration<double,std::milli>(diff).count() << " ms for " << n << " executions" << std::endl;
 }
 
 //template<class RT>

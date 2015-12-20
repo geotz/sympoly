@@ -1,7 +1,7 @@
 #include<sympoly/polynomial.hpp>
 #include<sympoly/operators.hpp>
 //#include<sympoly/lazy_operators.hpp>
-#include<sympoly/debug.hpp>
+#include<sympoly/utils.hpp>
 
 template<class T>
 void dump(const T& a, const std::string& name)
@@ -19,15 +19,22 @@ sym::_<5> _5;
 
 int main()
 {
-    sym::Monom<int,0,double,'y'> x1;
+    sym::Monom<int,0,double,'t'> x1;
 //    dump(x1, "x1");
-    sym::Monom<int,2,double,'y'> x2(2);
-    sym::Monom<int,3,double,'y'> x3(3);
-    sym::Monom<int,4,double,'y'> x4(4);
-    auto a = (x1+x2)*(x3+x4)*(x1+x2+x3+x4);
-    auto a2 = 2*a+a;
+    sym::Monom<int,2,double,'t'> x2(2);
+    sym::Monom<int,3,double,'t'> x3(3);
+    sym::Monom<int,4,double,'t'> x4(4);
+    auto a = (x1+x2)*(x3+x4)+(x3+x4);
+    auto a2 = 0*a;
 //    auto a = x1^_2;
     dump(a,"a");
+    auto da5 = !!!!!a;
+    dump(da5, "a'5");
+    sym::benchmark("degree(a)", [a] { a.degree(); }, 1000000);
+    std::cout << "deg(a'5) = " << da5.degree() << std::endl;
+    for (int i = 0; i <= da5.degree(); ++i) {
+        std::cout << "coeff(a'5," << i <<") = " << da5.coeff(i) << std::endl;
+    }
     dump(a2,"a2");
 
     auto b = expand(a2);

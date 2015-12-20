@@ -33,10 +33,10 @@ struct Support<DEG>
 };
 
 template<int, class>
-struct Compose;
+struct Concat;
 
 template<int DEG, int... DEGs>
-struct Compose<DEG,Support<DEGs...>>
+struct Concat<DEG,Support<DEGs...>>
 {
     typedef Support<DEG,DEGs...> Result;
 };
@@ -53,7 +53,7 @@ struct Translate<K,Support<DEG1>>
 template<int K, int DEG1, int... DEGs>
 struct Translate<K,Support<DEG1,DEGs...>>
 {
-    typedef typename Compose<K+DEG1,
+    typedef typename Concat<K+DEG1,
                             typename Translate<K,Support<DEGs...>>::Result>::Result Result;
 };
 
@@ -75,12 +75,12 @@ template<int DEG1,int... DEG1s, int DEG2, int... DEG2s>
 struct Union<Support<DEG1,DEG1s...>,Support<DEG2,DEG2s...>>
 {
     typedef typename std::conditional< DEG1 < DEG2,
-                typename Compose<DEG1,
+                typename Concat<DEG1,
                        typename Union<Support<DEG1s...>, Support<DEG2,DEG2s...>>::Result
                        >::type,
                  typename std::conditional<DEG1 == DEG2,
-                        typename Compose<DEG1,typename Union<Support<DEG1s...>,Support<DEG2s...>>::Result>::Result,
-                        typename Compose<DEG2,
+                        typename Concat<DEG1,typename Union<Support<DEG1s...>,Support<DEG2s...>>::Result>::Result,
+                        typename Concat<DEG2,
                                typename Union<Support<DEG1,DEG1s...>, Support<DEG2s...>>::Result>::Result
                         >::type
               >::type Result;
@@ -90,12 +90,12 @@ template<int DEG1,int DEG2, int... DEG2s>
 struct Union<Support<DEG1>,Support<DEG2,DEG2s...>>
 {
     typedef typename std::conditional< DEG1 < DEG2,
-                typename Compose<DEG1,
+                typename Concat<DEG1,
                        Support<DEG2,DEG2s...>
                        >::Result,
                 typename std::conditional<DEG1 == DEG2,
                         Support<DEG2,DEG2s...>,
-                        typename Compose<DEG2,
+                        typename Concat<DEG2,
                                typename Union<Support<DEG1>, Support<DEG2s...>>::Result
                                >::Result
                           >::type

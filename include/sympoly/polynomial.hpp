@@ -14,16 +14,26 @@ public:
     Monomial front;
     Polynomial tail;
     typedef typename Monomial::field_type FT;
+    static constexpr int DEG_MINF = Monomial::DEG_MINF;
 
     PolynomRep( const Monomial& m, const Polynomial& p): front(m.coeff), tail(p) { }
 //    static constexpr int content = Monomial::degree;
-    static constexpr int degree = Polynomial::degree;
+    static constexpr int _degree = Polynomial::_degree;
     static constexpr char symbol = Monomial::symbol;
-    bool is_zero() const { return front.is_zero() && tail.is_zero(); }
+    bool is_zero() const { return tail.is_zero() && front.is_zero(); }
+    int degree() const {
+        const int d = tail.degree();
+        if ( d != DEG_MINF ) return d;
+        return front.degree();
+    }
     template<class OS>
     OS& dump(OS& os) const {
-        os << front << " + ";
-        tail.dump(os);
+        if (is_zero()) {
+            os << "0";
+        } else {
+            os << front << " + ";
+            tail.dump(os);
+        }
         return os;
     }
 };
@@ -39,6 +49,15 @@ public:
 
     Polynom( const Monomial& m, const Polynomial& p): Base(m, p) { }
     const Polynom& expand() const { return *this; }
+
+    // TODO: O(logN) ?
+    RT coeff(int e) {
+        if (e < this->front._degree ) return RT(0);
+        if (e == this->front._degree ) return this->front.coeff;
+        return this->tail.coeff(e);
+    }
+
+//    const RT& lcoeff() const { return tail.lcoeff(); }
     FT operator()(FT x, int content=0) const { return eval(*this, x, content); }
 };
 
@@ -55,6 +74,13 @@ public:
 
     Polynom( const Monomial1& m, const Monomial2& p): Base(m, p) { }
     const Polynom& expand() const { return *this; }
+    RT coeff(int e) const {
+        if ( e == DEG1 ) return this->front.coeff;
+        if ( e == DEG2 ) return this->tail.coeff;
+        return RT(0);
+    }
+
+//    const RT& lcoeff() const { return tail.coeff; }
     FT operator()(FT x, int content=0) const { return eval(*this, x, content); }
 };
 
@@ -62,7 +88,7 @@ template<class RT, class Supp, class FT, char SYM>
 FT eval(const Polynom<RT,Supp,FT,SYM>& a, FT x, int content=0)
 {
     if (x == FT(0) ) return 0; // short-circuit ?
-    return a.front.power(x, content) * ( a.front.coeff + a.tail(x, a.front.degree) );
+    return a.front.power(x, content) * ( a.front.coeff + a.tail(x, a.front._degree) );
 }
 
 template<class RT,class Supp,class FT,char SYM>
@@ -198,6 +224,12 @@ template<class A1, class A2, class A3, class... As>
 auto mul_op(const A1& a1, const A2& a2, const A3& a3, const As&... as)
 {
     return mul_op(mul_op(a1, a2), a3, as...);
+}
+
+template<class RT, int... DEGs, class FT, char SYM>
+auto diff_op(const Polynom<RT,Support<DEGs...>,FT,SYM>& a)
+{
+    return add_op(diff_op(a.front), diff_op(a.tail));
 }
 
 //template<int N,class RT,int... DEGs,class FT,char SYM>

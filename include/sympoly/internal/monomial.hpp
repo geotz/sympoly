@@ -36,19 +36,23 @@ class Monom
 public:
     typedef RT ring_type;
     typedef FT field_type;
+    static constexpr int DEG_MINF = std::numeric_limits<int>::min();
     RT coeff;
 
-    Monom( RT c = RT(1) ): coeff(c) {}
+    Monom( const RT& c = RT(1) ): coeff(c) {}
 
-    static constexpr int degree = DEG;
+    static constexpr int _degree = DEG;
     static constexpr char symbol = SYM;
+    int degree() const { return coeff == RT(0) ? DEG_MINF : _degree; }
     bool is_zero() const { return coeff == RT(0); }
     FT operator()(FT x, int content=0) const { return eval(*this, x, content); }
     FT power(FT x, int content=0) const { return std::pow(x, DEG-content); }
 //    const Monom& expand() const { return *this; }
+//    RT coeff(int e) { return e == DEG ? _coeff : RT(0); }
+
     template<class OS>
     OS& dump(OS& os) const {
-        if (degree == 0) return os << coeff;
+        if (_degree == 0) return os << coeff;
         if (is_zero()) return os << "0";
         if (coeff == RT(-1)) {
             os << "-";
@@ -56,7 +60,7 @@ public:
             os << coeff;
         }
         os << symbol;
-        if (degree > 1) os << "^" << degree;
+        if (_degree > 1) os << "^" << _degree;
         return os;
     }
 };
@@ -98,6 +102,20 @@ Monom<RT,DEG,FT,SYM> mul_op(const RT& a, const Monom<RT,DEG,FT,SYM>& b)
 template<class RT, int DEG, class FT, char SYM>
 auto mul_op(const Monom<RT,DEG,FT,SYM>& a, const RT& b) { return mul_op(b, a); }
 
+template<class RT, int DEG, class FT, char SYM>
+auto diff_op(const Monom<RT,DEG,FT,SYM>& a)
+{
+    return Monom<RT,DEG-1,FT,SYM>(a.coeff * DEG);
+}
+
+// CAUTION: returning RT=int(0) will change semantics of differantiation operator!()
+// !t = 1 --> !1 --> 0 --> !0 --> 1
+template<class RT, class FT, char SYM>
+auto diff_op(const Monom<RT,0,FT,SYM>& a)
+{
+    return Monom<RT,0,FT,SYM>(0);
+}
+
 // **************************
 //      OPERATORS
 // **************************
@@ -127,6 +145,9 @@ auto operator*(const Monom<RT,DEG1,FT,SYM>& a, const Monom<RT,DEG2,FT,SYM>& b) {
 
 template<class RT, int DEG, int N, class FT, char SYM>
 auto operator^(const Monom<RT,DEG,FT,SYM>& a, const _<N>& ) { return pow_op<N>(a); }
+
+template<class RT, int DEG, class FT, char SYM>
+auto operator!(const Monom<RT,DEG,FT,SYM>& a) { return diff_op(a); }
 
 }
 

@@ -17,6 +17,9 @@ auto operator+(const A& a, const B& b) { return add_op(a,b); }
 template<class A,class B>
 auto operator*(const A& a, const B& b) { return mul_op(a,b); }
 
+template<class A>
+auto operator!(const A& a) { return diff_op(a); }
+
 }
 
 #endif
